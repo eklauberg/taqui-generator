@@ -1,6 +1,5 @@
 import type { MetaFunction } from "@remix-run/node";
 import { useState } from "react";
-import { copyImageToClipboard } from 'copy-image-clipboard'
 
 export const meta: MetaFunction = () => {
   return [
@@ -19,8 +18,20 @@ export default function Index() {
     }
   }
 
-  const copy = () => {
-    copyImageToClipboard(imageUrl)
+  const copy = async () => {
+    if (!imageUrl) return;
+
+    try {
+      const response = await fetch(imageUrl);
+      const blob = await response.blob();
+      
+      const clipboardItem = new ClipboardItem({ "image/png": blob });
+      await navigator.clipboard.write([clipboardItem]);
+
+      alert("Imagem copiada para o clipboard!");
+    } catch (error) {
+      console.error("Erro ao copiar a imagem: ", error);
+    }
   }
 
   return (
