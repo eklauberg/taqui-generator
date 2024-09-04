@@ -6,6 +6,9 @@ import {
   ScrollRestoration,
 } from "@remix-run/react";
 import "./tailwind.css";
+import ReactGA from "react-ga4";
+
+ReactGA.initialize("G-F2Z41SP1ZT");
 
 export function links() {
   return [
