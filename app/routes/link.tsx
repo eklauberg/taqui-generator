@@ -43,7 +43,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 export default function Index() {
     const [buttonText, setButtonText] = useState<string>('Copiar');
     const [text, setText] = useState('')
-    const [link, setLink] = useState('https://www.google.com/search?q=itajai+bombinhas&rlz=1C1ONGR_pt-PTBR1083BR1083&oq=itajai+bombinhas&gs_lcrp=EgZjaHJvbWUyCQgAEEUYORiABDIICAEQABgWGB4yCAgCEAAYFhgeMggIAxAAGBYYHjIICAQQABgWGB4yCAgFEAAYFhgeMgoIBhAAGA8YFhgeMgoIBxAAGA8YFhgeMgwICBAAGAoYDxgWGB4yCggJEAAYDxgWGB7SAQg2NTg4ajBqN6gCALACAA&sourceid=chrome&ie=UTF-8')
+    const [link, setLink] = useState('')
     const showNotification = useNotification();
     const actionData = useActionData<ActionData>()
 
@@ -62,8 +62,8 @@ export default function Index() {
                 <div className="mb-2">
                     <img src="/assets/taqui-a-logo.png" alt="Tá aqui Generator" className="w-auto m-auto" />
                 </div>
-                <div className="flex flex-col w-full my-4 gap-4">
-                    <Form method="post">
+                <Form method="post">
+                    <div className="flex flex-col w-full my-4 gap-4">
                         <input
                             type="text"
                             name="contexto"
@@ -88,13 +88,13 @@ export default function Index() {
                         >
                             Encurtar
                         </button>
-                    </Form>
-                    {actionData?.shortUrl && (
-                        <div>
-                            <p>URL Encurtada: <a href={`/teste/${actionData.shortUrl}`}>{`${window.location.origin}/teste/${actionData.shortUrl}`}</a></p>
-                        </div>
-                    )}
-                </div>
+                    </div>
+                </Form>
+                {actionData?.shortUrl && (
+                    <div>
+                        <p>URL Encurtada: <a href={`/teste/${actionData.shortUrl}`}>{`${window.location.origin}/teste/${actionData.shortUrl}`}</a></p>
+                    </div>
+                )}
             </div>
         </div>
     );
