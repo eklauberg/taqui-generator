@@ -1,3 +1,4 @@
+@config "../tailwind.config.ts";
 @import "tailwindcss";
 
 @theme {
@@ -7,9 +8,38 @@
 
 html,
 body {
-  @apply bg-white dark:bg-gray-950;
+  @apply bg-white text-gray-950 antialiased dark:bg-gray-950 dark:text-gray-50;
 
   @media (prefers-color-scheme: dark) {
     color-scheme: dark;
+  }
+}
+
+@layer components {
+  .taqui-input {
+    @apply w-full rounded-md bg-white p-3 text-2xl text-black border-[3px] border-black transition-shadow duration-200 focus:outline-none;
+  }
+
+  .taqui-input:focus {
+    box-shadow: 3px 3px 0 0 #000000;
+  }
+
+  .taqui-btn {
+    @apply inline-flex items-center justify-center rounded-md bg-[#FFE500] px-6 py-3 text-2xl font-bold text-black border-[3px] border-black transition duration-200 focus:outline-none;
+  }
+
+  .taqui-btn:hover {
+    @apply bg-[#FFF129];
+    box-shadow: 3px 3px 0 0 #000000;
+  }
+
+  .taqui-btn:active {
+    @apply bg-[#FFE500];
+    box-shadow: 3px 3px 0 0 #000000;
+  }
+
+  .taqui-btn:disabled {
+    @apply cursor-not-allowed opacity-60;
+    box-shadow: none;
   }
 }

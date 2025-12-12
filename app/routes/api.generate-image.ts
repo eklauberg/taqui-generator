@@ -9,8 +9,9 @@ export async function loader({ request }: Route.LoaderArgs) {
 	}
 
 	const imageBuffer = await taquiGenerator(text);
+	const body = new Uint8Array(imageBuffer);
 
-	return new Response(imageBuffer, {
+	return new Response(body, {
 		status: 200,
 		headers: {
 			"Content-Type": "image/png",

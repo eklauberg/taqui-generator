@@ -6,7 +6,10 @@ import useNotification from "../hooks/useNotification";
 export const meta: MetaFunction = () => {
 	return [
 		{ title: "Taqui Generator" },
-		{ name: "description", content: "Welcome to Remix!" },
+		{
+			name: "description",
+			content: "Gere imagens no estilo “Tá aqui” com texto personalizado.",
+		},
 	];
 };
 
@@ -17,8 +20,9 @@ export default function Index() {
 	const showNotification = useNotification();
 
 	const handleClick = () => {
-		if (text && text.trim().length > 0) {
-			setImageUrl(`/api/generate-image?text=${text}`);
+		const trimmed = text.trim();
+		if (trimmed.length > 0) {
+			setImageUrl(`/api/generate-image?text=${encodeURIComponent(trimmed)}`);
 			ReactGA.event({ category: "Botao", action: "Clicou", label: "Gerar" });
 		}
 	};
@@ -51,45 +55,47 @@ export default function Index() {
 	};
 
 	return (
-		<div className="flex w-full justify-center min-h-screen p-4">
-			<div className="flex flex-col items-center w-full max-w-md">
-				<div className="mb-2">
+		<div className="relative min-h-screen overflow-hidden bg-[#07B8FF] px-4 py-10">
+			<div className="pointer-events-none absolute left-1/2 top-1/2 h-[140vmax] w-[140vmax] -translate-x-1/2 -translate-y-1/2 scale-150 origin-[48%_52%] bg-[url('/assets/taqui-o-background.png')] bg-cover bg-center opacity-100 will-change-transform animate-spin-slower" />
+
+			<div className="relative z-10 mx-auto flex w-full max-w-md flex-col items-center">
+				<div className="mb-6">
 					<img
 						src="/assets/taqui-a-logo.png"
-						alt="Tá aqui Generator"
-						className="w-auto m-auto"
+						alt="Táqui Generator"
+						className="h-auto w-[320px] max-w-full"
 					/>
 				</div>
-				<div className="flex w-full my-4 gap-4">
+
+				<div className="flex w-full items-stretch gap-4">
 					<input
+						id="taqui-text"
 						type="text"
 						name="text"
 						value={text}
-						onChange={(v) => setText(v.target.value)}
+						onChange={(event) => setText(event.target.value)}
 						onKeyDown={handleKeyDown}
-						placeholder="Digite aqui o contexto"
+						placeholder="Tá aqui o contexto"
+						autoComplete="off"
 						required
-						className="w-full p-3 text-2xl border-[3px] border-black rounded-md focus:outline-none focus:shadow-[3px_3px_0px_0px_#000000] transition-shadow duration-200"
+						className="taqui-input"
 					/>
 					<button
+						type="button"
 						onClick={handleClick}
-						className="py-3 px-6 text-2xl text-black font-bold rounded-md bg-[#FFE500] hover:bg-[#FFF129] hover:shadow-[3px_3px_0px_0px_#000000] active:bg-[#FFE500] active:shadow-[3px_3px_0px_0px_#000000] border-[3px] border-black transition duration-200 focus:outline-none"
+						disabled={text.trim().length === 0}
+						className="taqui-btn whitespace-nowrap"
 					>
 						Gerar
 					</button>
 				</div>
+
 				{imageUrl && (
-					<div className="mt-4 flex flex-col items-center max-w-md gap-4">
-						<img
-							id="npm-install"
-							src={imageUrl}
-							alt="Imagem gerada"
-							className="w-full border border-gray-300 rounded-md shadow-sm"
-						/>
-						<button
-							onClick={copy}
-							className="py-3 px-6 text-2xl text-black font-bold bg-[#FFE500] hover:bg-[#FFF129] hover:shadow-[3px_3px_0px_0px_#000000] active:bg-[#FFE500] active:shadow-[3px_3px_0px_0px_#000000] rounded-md border-[3px] border-black transition duration-200 focus:outline-none"
-						>
+					<div className="mt-6 flex w-full flex-col items-center gap-4">
+						<div className="w-full overflow-hidden rounded-md bg-white shadow-[0px_8px_0px_0px_rgba(0,0,0,0.15)]">
+							<img src={imageUrl} alt="Imagem gerada" className="w-full" />
+						</div>
+						<button type="button" onClick={copy} className="taqui-btn">
 							{buttonText}
 						</button>
 					</div>

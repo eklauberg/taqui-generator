@@ -1,6 +1,6 @@
 # Táqui Generator
 
-O **Táqui Generator** é uma aplicação web, desenvolvida com [Remix.js](https://remix.run/), que permite gerar imagens com texto personalizado no estilo "Tá Aqui", com base em uma imagem de fundo. Basta inserir o texto desejado, clicar no botão "Gerar" e copiar a imagem gerada para compartilhar com seus amigos!
+O **Táqui Generator** é uma aplicação web construída com **React Router (framework)** + **Vite** + **Tailwind CSS**, que permite gerar imagens com texto personalizado no estilo "Tá aqui", com base em uma imagem de fundo. Basta inserir o texto desejado, clicar em "Gerar" e copiar a imagem para compartilhar.
 
 ## Funcionalidades
 
@@ -27,7 +27,14 @@ O **Táqui Generator** é uma aplicação web, desenvolvida com [Remix.js](https
     ```bash
     bun run dev
     ```
-4. Abra o navegador e acesse `http://localhost:3000` para usar o Táqui Generator.
+4. Abra o navegador e acesse a URL exibida no terminal (geralmente `http://localhost:5173`).
+
+## Build e Produção
+
+```bash
+bun run build
+bun run start
+```
 
 ## Contribuindo
 
