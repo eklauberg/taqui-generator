@@ -9,6 +9,7 @@ import {
 
 import type { Route } from "./+types/root";
 import appStylesHref from "./app.css?url";
+import { ToastProvider } from "./components/Toast";
 
 export const links: Route.LinksFunction = () => [
 	{ rel: "stylesheet", href: appStylesHref },
@@ -42,7 +43,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 				<Links />
 			</head>
 			<body>
-				{children}
+				<ToastProvider>{children}</ToastProvider>
 				<ScrollRestoration />
 				<Scripts />
 			</body>
