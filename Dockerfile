@@ -1,29 +1,44 @@
-# Etapa 1: Construção
-FROM oven/bun:latest as builder
+# Etapa 1: dependências (Bun)
+FROM oven/bun:1.2.23 as deps
 
 WORKDIR /app
 
-# Copia todos os arquivos para o contêiner
+COPY package.json bun.lock ./
+
+# Dependências para runtime (sem devDependencies)
+RUN bun install --frozen-lockfile --production
+
+
+# Etapa 2: build (Bun)
+FROM oven/bun:1.2.23 as builder
+
+WORKDIR /app
+
+COPY package.json bun.lock ./
+RUN bun install --frozen-lockfile
+
 COPY . .
+RUN bun run build
 
-# Instala as dependências e constrói o projeto para produção
-RUN bun install && bun run build
 
-# Etapa 2: Contêiner final para produção
-FROM oven/bun:latest
-
-RUN apt-get update && apt-get install -y \
-    git \
-    libvips-dev \
-    libfontconfig1
+# Etapa 3: runtime (Node)
+FROM node:20-slim as runner
 
 WORKDIR /app
 
-# Copia os arquivos necessários do builder para o contêiner final
-COPY --from=builder /app /app
+ENV NODE_ENV=production
 
-# Expor a porta usada pelo servidor Remix
+# Necessário para o Sharp renderizar SVG/texto com fontes.
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends libfontconfig1 \
+  && rm -rf /var/lib/apt/lists/*
+
+COPY --from=deps /app/node_modules ./node_modules
+COPY --from=builder /app/build ./build
+COPY --from=builder /app/public ./public
+COPY package.json ./
+
 EXPOSE 3000
 
-# Comando para iniciar o servidor Remix
-CMD ["bun", "run", "start"]
+# react-router-serve é feito para Node (evita incompatibilidades do Bun com react-dom/server).
+CMD ["node", "./node_modules/.bin/react-router-serve", "./build/server/index.js"]
