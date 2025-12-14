@@ -1,5 +1,5 @@
 import type { MetaFunction } from "react-router";
-import { Confetti, Flask, Globe, LinkSimple, Sticker } from "@phosphor-icons/react";
+import { ConfettiIcon, FlaskIcon, GlobeIcon, LinkSimpleIcon, StickerIcon, PasswordIcon } from "@phosphor-icons/react";
 import { PageShell } from "../../components/PageShell";
 
 type HubCardProps = {
@@ -7,7 +7,7 @@ type HubCardProps = {
 	description: string;
 	href: string;
 	badge?: string;
-	icon: "sticker" | "globe" | "link";
+	icon: "sticker" | "globe" | "link" | "Password";
 };
 
 type HubStatProps = {
@@ -18,28 +18,36 @@ type HubStatProps = {
 
 const hubCards: HubCardProps[] = [
 	{
-		title: "Taqui teu texto",
+		title: "Táqui Teu Contexto",
 		description:
-			"Use o gerador oficial para criar o meme “Tá aqui” com qualquer frase e copiar rapidinho.",
+			"Faltou contexto? Calma, tenho um guardado aqui bem no meu bolso. Gere o meme, troque a legenda e encerre a discussão com aquele toque de classe.",
 		href: "/generator",
 		badge: "Disponível",
 		icon: "sticker",
 	},
 	{
-		title: "Meu IP",
+		title: "Táqui Meu IP",
 		description:
-			"Veja seu IP público em texto e também como uma imagem pronta no estilo Táqui.",
+			"Táqui o endereço que a CIA e o Google já conhecem. Descubra qual é o seu IP público e gere uma imagem pra provar que você existe na rede.",
 		href: "/ip",
 		badge: "Novo",
 		icon: "globe",
 	},
 	{
-		title: "Encurtador de links",
+		title: "Táqui Teu Link",
 		description:
-			"Experimento para gerar links curtos que redirecionam.",
+			"Ninguém merece ler um textão de link. Encurta isso aí, deixa bonitinho e clicávél. Seu vizinho agradece.",
 		href: "/link",
 		badge: "Beta",
 		icon: "link",
+	},
+	{
+		title: "Táqui Tua Senha",
+		description:
+			"Sua senha é '123456' ou a data do seu aniversário, né? Senti daqui. Gere uma senha blindada que nem você vai decorar.",
+		href: "/pass",
+		badge: "Beta",
+		icon: "Password",
 	},
 ];
 
@@ -109,11 +117,13 @@ function HubCardIcon({ kind }: { kind: HubCardProps["icon"] }) {
 
 	switch (kind) {
 		case "sticker":
-			return <Sticker className={className} weight="bold" />;
+			return <StickerIcon className={className} weight="bold" />;
 		case "globe":
-			return <Globe className={className} weight="bold" />;
+			return <GlobeIcon className={className} weight="bold" />;
 		case "link":
-			return <LinkSimple className={className} weight="bold" />;
+			return <LinkSimpleIcon className={className} weight="bold" />;
+		case "Password":
+			return <PasswordIcon className={className} weight="bold" />;
 	}
 }
 
@@ -121,11 +131,11 @@ function getHubBadgeConfig(badge?: string) {
 	if (!badge || badge === "Disponível") return null;
 
 	if (badge === "Novo") {
-		return { label: badge, background: "#FFF129", Icon: Confetti };
+		return { label: badge, background: "#FFF129", Icon: ConfettiIcon };
 	}
 
 	if (badge === "Beta") {
-		return { label: badge, background: "#47B8FF", Icon: Flask };
+		return { label: badge, background: "#47B8FF", Icon: FlaskIcon };
 	}
 
 	return null;
