@@ -1,11 +1,11 @@
-import { useEffect, useRef, useState } from "react";
-import { Form, useActionData } from "react-router";
-import type { MetaFunction } from "react-router";
 import {
 	ArrowSquareOutIcon,
 	CopyIcon,
 	ScissorsIcon,
 } from "@phosphor-icons/react";
+import { useEffect, useRef, useState } from "react";
+import type { MetaFunction } from "react-router";
+import { Form, useActionData } from "react-router";
 import { PageShell } from "../../components/PageShell";
 import { taquiToastPresets, useToast } from "../../components/Toast";
 
@@ -34,7 +34,9 @@ export function LinkPage() {
 
 	const actionData = useActionData<ActionData>();
 	const origin =
-		typeof window !== "undefined" ? window.location.origin : "https://taqui.app";
+		typeof window !== "undefined"
+			? window.location.origin
+			: "https://taqui.app";
 	const shortUrl = actionData?.shortUrl;
 	const fullShortUrl = shortUrl ? `${origin}/redirect/${shortUrl}` : "";
 	const lastShortUrlRef = useRef<string | undefined>(undefined);
@@ -61,7 +63,7 @@ export function LinkPage() {
 					message: actionData.error,
 				});
 				return;
-			
+
 			case 423:
 				toast({
 					...taquiToastPresets.warning,
@@ -103,7 +105,8 @@ export function LinkPage() {
 			toast({
 				...taquiToastPresets.success,
 				title: "TÁQUI!",
-				message: "Link copiado. O vizinho agradece por você não mandar aquele textão.",
+				message:
+					"Link copiado. O vizinho agradece por você não mandar aquele textão.",
 			});
 			setTimeout(() => {
 				setCopyButtonText("Copiar");

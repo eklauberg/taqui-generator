@@ -1,5 +1,14 @@
+import {
+	ClockCountdownIcon,
+	ConfettiIcon,
+	FlaskIcon,
+	GlobeIcon,
+	LinkSimpleIcon,
+	PasswordIcon,
+	StickerIcon,
+	WhatsappLogoIcon,
+} from "@phosphor-icons/react";
 import type { MetaFunction } from "react-router";
-import { ConfettiIcon, FlaskIcon, GlobeIcon, LinkSimpleIcon, StickerIcon, PasswordIcon } from "@phosphor-icons/react";
 import { PageShell } from "../../components/PageShell";
 
 type HubCardProps = {
@@ -7,7 +16,7 @@ type HubCardProps = {
 	description: string;
 	href: string;
 	badge?: string;
-	icon: "sticker" | "globe" | "link" | "Password";
+	icon: "sticker" | "globe" | "link" | "Password" | "clock" | "whatsapp";
 };
 
 type HubStatProps = {
@@ -49,6 +58,14 @@ const hubCards: HubCardProps[] = [
 		badge: "Beta",
 		icon: "Password",
 	},
+	{
+		title: "Táqui o Zap",
+		description:
+			"Abre direto o papo no WhatsApp Web: cola o número com DDI e DDD, escreve a mensagem e já entra na conversa.",
+		href: "/whatsapp",
+		badge: "Beta",
+		icon: "whatsapp",
+	},
 ];
 
 export const hubMeta: MetaFunction = () => {
@@ -63,9 +80,7 @@ export const hubMeta: MetaFunction = () => {
 
 export function HubPage() {
 	return (
-		<PageShell
-			containerClassName="max-w-[1200px] gap-12"
-		>
+		<PageShell containerClassName="max-w-[1200px] gap-12">
 			<div className="grid w-full gap-4 md:grid-cols-2">
 				{hubCards.map((card) => (
 					<HubCard key={card.href} {...card} />
@@ -124,6 +139,10 @@ function HubCardIcon({ kind }: { kind: HubCardProps["icon"] }) {
 			return <LinkSimpleIcon className={className} weight="bold" />;
 		case "Password":
 			return <PasswordIcon className={className} weight="bold" />;
+		case "clock":
+			return <ClockCountdownIcon className={className} weight="bold" />;
+		case "whatsapp":
+			return <WhatsappLogoIcon className={className} weight="bold" />;
 	}
 }
 
