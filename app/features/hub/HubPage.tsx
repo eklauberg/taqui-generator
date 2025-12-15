@@ -1,4 +1,3 @@
-import type { MetaFunction } from "react-router";
 import {
 	ConfettiIcon,
 	FlaskIcon,
@@ -8,6 +7,7 @@ import {
 	StickerIcon,
 	TicketIcon,
 } from "@phosphor-icons/react";
+import type { MetaFunction } from "react-router";
 import { PageShell } from "../../components/PageShell";
 
 type HubCardProps = {
@@ -79,9 +79,7 @@ export const hubMeta: MetaFunction = () => {
 
 export function HubPage() {
 	return (
-		<PageShell
-			containerClassName="max-w-[1200px] gap-12"
-		>
+		<PageShell containerClassName="max-w-[1200px] gap-12">
 			<div className="grid w-full gap-4 md:grid-cols-2">
 				{hubCards.map((card) => (
 					<HubCard key={card.href} {...card} />
