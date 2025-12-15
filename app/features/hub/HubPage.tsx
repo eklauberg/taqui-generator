@@ -7,6 +7,7 @@ import {
 	PasswordIcon,
 	StickerIcon,
 	WhatsappLogoIcon,
+	TicketIcon,
 } from "@phosphor-icons/react";
 import type { MetaFunction } from "react-router";
 import { PageShell } from "../../components/PageShell";
@@ -16,7 +17,7 @@ type HubCardProps = {
 	description: string;
 	href: string;
 	badge?: string;
-	icon: "sticker" | "globe" | "link" | "Password" | "clock" | "whatsapp";
+	icon: "sticker" | "globe" | "link" | "Password" | "clock" | "whatsapp" | "ticket";
 };
 
 type HubStatProps = {
@@ -65,6 +66,14 @@ const hubCards: HubCardProps[] = [
 		href: "/whatsapp",
 		badge: "Beta",
 		icon: "whatsapp",
+	},
+	{
+		title: "Táqui a Loteria",
+		description:
+			"Tá com preguiça de escolher número? Eu escolho por você. Ajusta a quantidade e deixa o destino fazer o resto.",
+		href: "/loto",
+		badge: "Novo",
+		icon: "ticket",
 	},
 ];
 
@@ -132,17 +141,21 @@ function HubCardIcon({ kind }: { kind: HubCardProps["icon"] }) {
 
 	switch (kind) {
 		case "sticker":
-			return <StickerIcon className={className} weight="bold" />;
+			return <StickerIcon className={className} />;
 		case "globe":
-			return <GlobeIcon className={className} weight="bold" />;
+			return <GlobeIcon className={className} />;
 		case "link":
-			return <LinkSimpleIcon className={className} weight="bold" />;
+			return <LinkSimpleIcon className={className} />;
 		case "Password":
-			return <PasswordIcon className={className} weight="bold" />;
+			return <PasswordIcon className={className} />;
 		case "clock":
-			return <ClockCountdownIcon className={className} weight="bold" />;
+			return <ClockCountdownIcon className={className} />;
 		case "whatsapp":
-			return <WhatsappLogoIcon className={className} weight="bold" />;
+			return <WhatsappLogoIcon className={className} />;
+		case "ticket":
+			return <TicketIcon className={className} />;
+		default:
+			return null;
 	}
 }
 
