@@ -34,11 +34,12 @@ function buildAdSenseScriptSrc(client: string) {
 function ensureAdSenseScriptLoaded(scriptSrc: string) {
 	if (typeof document === "undefined") return;
 
-	const existing =
-		document.getElementById(ADSENSE_SCRIPT_ID) ??
-		document.querySelector(`script[src^="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"]`);
+	const existing = (document.getElementById(ADSENSE_SCRIPT_ID) ??
+		document.querySelector(
+			`script[src^="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"]`,
+		)) as HTMLScriptElement | null;
 
-	if (existing) return;
+	if (existing) return existing;
 
 	const script = document.createElement("script");
 	script.id = ADSENSE_SCRIPT_ID;
@@ -46,6 +47,7 @@ function ensureAdSenseScriptLoaded(scriptSrc: string) {
 	script.src = scriptSrc;
 	script.crossOrigin = "anonymous";
 	document.head.appendChild(script);
+	return script;
 }
 
 export function AdPage() {
@@ -68,7 +70,15 @@ export function AdPage() {
 			return;
 		}
 
-		ensureAdSenseScriptLoaded(buildAdSenseScriptSrc(adsenseClient));
+		const script = ensureAdSenseScriptLoaded(buildAdSenseScriptSrc(adsenseClient));
+
+		const handleScriptError = () => {
+			setAdError(
+				"O anúncio não carregou. Seu navegador/adblock pode estar bloqueando o AdSense.",
+			);
+		};
+
+		script?.addEventListener("error", handleScriptError);
 
 		const timeout = setTimeout(() => {
 			const element = insRef.current;
@@ -89,7 +99,10 @@ export function AdPage() {
 			}
 		}, 0);
 
-			return () => clearTimeout(timeout);
+		return () => {
+			clearTimeout(timeout);
+			script?.removeEventListener("error", handleScriptError);
+		};
 	}, [adsenseClient, adsenseSlot, mounted]);
 
 	return (
