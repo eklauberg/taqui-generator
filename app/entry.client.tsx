@@ -53,25 +53,28 @@ startTransition(() => {
 		});
 	};
 
-	root = hydrateRoot(
-		document,
-		<StrictMode>
-			<HydratedRouter />
-		</StrictMode>,
-		{
-			onRecoverableError(error, errorInfo) {
-				console.error("[taqui] Recoverable error:", error, errorInfo);
-				if (isHydrationMismatch(error)) {
-					fallbackToClient(error);
-				}
+	try {
+		root = hydrateRoot(
+			document,
+			<StrictMode>
+				<HydratedRouter />
+			</StrictMode>,
+			{
+				onRecoverableError(error, errorInfo) {
+					console.error("[taqui] Recoverable error:", error, errorInfo);
+					if (isHydrationMismatch(error)) {
+						fallbackToClient(error);
+					}
+				},
+				onUncaughtError(error, errorInfo) {
+					console.error("[taqui] Uncaught error:", error, errorInfo);
+					if (isHydrationMismatch(error)) {
+						fallbackToClient(error);
+					}
+				},
 			},
-			onUncaughtError(error, errorInfo) {
-				console.error("[taqui] Uncaught error:", error, errorInfo);
-				if (isHydrationMismatch(error)) {
-					fallbackToClient(error);
-				}
-			},
-		},
-	);
+		);
+	} catch (error) {
+		fallbackToClient(error);
+	}
 });
-

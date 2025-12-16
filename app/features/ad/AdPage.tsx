@@ -31,7 +31,7 @@ function buildAdSenseScriptSrc(client: string) {
 	return url.toString();
 }
 
-function ensureAdSenseScriptLoaded(scriptSrc: string) {
+function ensureAdSenseScriptLoaded(scriptSrc: string, parent: HTMLElement) {
 	if (typeof document === "undefined") return;
 
 	const existing = (document.getElementById(ADSENSE_SCRIPT_ID) ??
@@ -39,20 +39,25 @@ function ensureAdSenseScriptLoaded(scriptSrc: string) {
 			`script[src^="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"]`,
 		)) as HTMLScriptElement | null;
 
-	if (existing) return existing;
+	if (existing) {
+		if (existing.id === ADSENSE_SCRIPT_ID && existing.parentElement !== parent) {
+			parent.appendChild(existing);
+		}
+		return existing;
+	}
 
 	const script = document.createElement("script");
 	script.id = ADSENSE_SCRIPT_ID;
 	script.async = true;
 	script.src = scriptSrc;
 	script.crossOrigin = "anonymous";
-	document.head.appendChild(script);
+	parent.appendChild(script);
 	return script;
 }
 
 export function AdPage() {
 	const { adsenseClient, adsenseSlot } = useLoaderData() as AdLoaderData;
-	const insRef = useRef<HTMLModElement | null>(null);
+	const adSlotRef = useRef<HTMLDivElement | null>(null);
 	const [adError, setAdError] = useState<string | null>(null);
 	const [mounted, setMounted] = useState(false);
 
@@ -70,7 +75,13 @@ export function AdPage() {
 			return;
 		}
 
-		const script = ensureAdSenseScriptLoaded(buildAdSenseScriptSrc(adsenseClient));
+		const adSlot = adSlotRef.current;
+		if (!adSlot) return;
+
+		if (adSlot.dataset.taquiAdsenseMounted === "true") return;
+		adSlot.dataset.taquiAdsenseMounted = "true";
+
+		const script = ensureAdSenseScriptLoaded(buildAdSenseScriptSrc(adsenseClient), adSlot);
 
 		const handleScriptError = () => {
 			setAdError(
@@ -80,27 +91,23 @@ export function AdPage() {
 
 		script?.addEventListener("error", handleScriptError);
 
-		const timeout = setTimeout(() => {
-			const element = insRef.current;
-			if (!element) return;
+		// Renderiza exatamente o snippet recomendado pelo Google (client-side),
+		// para evitar mismatch de hidratação no SSR.
+		const comment = document.createComment(" taqui ");
+		const ins = document.createElement("ins");
+		ins.className = "adsbygoogle";
+		ins.style.cssText = "display:inline-block;width:540px;height:450px";
+		ins.setAttribute("data-ad-client", adsenseClient);
+		ins.setAttribute("data-ad-slot", adsenseSlot);
 
-			const status =
-				element.getAttribute("data-ad-status") ??
-				element.getAttribute("data-adsbygoogle-status");
-			if (status === "filled" || status === "done") return;
+		const pushScript = document.createElement("script");
+		pushScript.text = "(adsbygoogle = window.adsbygoogle || []).push({});";
 
-			try {
-				(window.adsbygoogle = window.adsbygoogle || []).push({});
-			} catch (error) {
-				console.error("Erro ao carregar anúncio:", error);
-				setAdError(
-					"O anúncio não carregou. Se você estiver com adblock, talvez ele esteja bloqueando.",
-				);
-			}
-		}, 0);
+		adSlot.appendChild(comment);
+		adSlot.appendChild(ins);
+		adSlot.appendChild(pushScript);
 
 		return () => {
-			clearTimeout(timeout);
 			script?.removeEventListener("error", handleScriptError);
 		};
 	}, [adsenseClient, adsenseSlot, mounted]);
@@ -116,13 +123,7 @@ export function AdPage() {
 
 					<div className="mt-6 flex w-full justify-center overflow-x-auto">
 						{mounted ? (
-							<ins
-								ref={insRef}
-								className="adsbygoogle"
-								style={{ display: "inline-block", width: 540, height: 450 }}
-								data-ad-client={adsenseClient}
-								data-ad-slot={adsenseSlot}
-							/>
+							<div ref={adSlotRef} />
 						) : (
 							<div className="flex h-[450px] w-[540px] max-w-full items-center justify-center rounded-lg border-2 border-black bg-[#47B8FF] px-6 text-center text-sm leading-6 text-black shadow-[4px_4px_0_#000000]">
 								Carregando anúncio…
