@@ -2,6 +2,7 @@ import {
 	ClockCountdownIcon,
 	ConfettiIcon,
 	FlaskIcon,
+	HashStraightIcon,
 	GlobeIcon,
 	LinkSimpleIcon,
 	PasswordIcon,
@@ -17,7 +18,7 @@ type HubCardProps = {
 	description: string;
 	href: string;
 	badge?: string;
-	icon: "sticker" | "globe" | "link" | "Password" | "clock" | "whatsapp" | "ticket";
+	icon: "sticker" | "globe" | "link" | "Password" | "clock" | "whatsapp" | "ticket" | "hash";
 };
 
 type HubStatProps = {
@@ -74,6 +75,14 @@ const hubCards: HubCardProps[] = [
 		href: "/loto",
 		badge: "Novo",
 		icon: "ticket",
+	},
+	{
+		title: "Táqui o Hash",
+		description:
+			"UUID quentinho, SHA de vários sabores e até um carimbo visual pra diferenciar seu payload.",
+		href: "/hash",
+		badge: "Novo",
+		icon: "hash",
 	},
 ];
 
@@ -154,6 +163,8 @@ function HubCardIcon({ kind }: { kind: HubCardProps["icon"] }) {
 			return <WhatsappLogoIcon className={className} />;
 		case "ticket":
 			return <TicketIcon className={className} />;
+		case "hash":
+			return <HashStraightIcon className={className} />;
 		default:
 			return null;
 	}
