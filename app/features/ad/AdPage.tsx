@@ -52,8 +52,14 @@ export function AdPage() {
 	const { adsenseClient, adsenseSlot } = useLoaderData() as AdLoaderData;
 	const insRef = useRef<HTMLModElement | null>(null);
 	const [adError, setAdError] = useState<string | null>(null);
+	const [mounted, setMounted] = useState(false);
 
 	useEffect(() => {
+		setMounted(true);
+	}, []);
+
+	useEffect(() => {
+		if (!mounted) return;
 		setAdError(null);
 		if (!adsenseClient || !adsenseSlot) {
 			setAdError(
@@ -83,8 +89,8 @@ export function AdPage() {
 			}
 		}, 0);
 
-		return () => clearTimeout(timeout);
-	}, [adsenseClient, adsenseSlot]);
+			return () => clearTimeout(timeout);
+	}, [adsenseClient, adsenseSlot, mounted]);
 
 	return (
 		<PageShell showLogo containerClassName="max-w-[1200px] gap-12">
@@ -96,13 +102,19 @@ export function AdPage() {
 					</p>
 
 					<div className="mt-6 flex w-full justify-center overflow-x-auto">
-						<ins
-							ref={insRef}
-							className="adsbygoogle"
-							style={{ display: "inline-block", width: 540, height: 450 }}
-							data-ad-client={adsenseClient}
-							data-ad-slot={adsenseSlot}
-						/>
+						{mounted ? (
+							<ins
+								ref={insRef}
+								className="adsbygoogle"
+								style={{ display: "inline-block", width: 540, height: 450 }}
+								data-ad-client={adsenseClient}
+								data-ad-slot={adsenseSlot}
+							/>
+						) : (
+							<div className="flex h-[450px] w-[540px] max-w-full items-center justify-center rounded-lg border-2 border-black bg-[#47B8FF] px-6 text-center text-sm leading-6 text-black shadow-[4px_4px_0_#000000]">
+								Carregando anúncio…
+							</div>
+						)}
 					</div>
 
 					{adError && (
