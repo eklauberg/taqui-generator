@@ -1,7 +1,5 @@
-import { AdPage, adMeta } from "../features/ad/AdPage";
+import { AdPage } from "../features/ad/AdPage";
 import type { Route } from "./+types/ad";
-
-export const meta = adMeta;
 
 export async function loader(_: Route.LoaderArgs) {
 	return {

@@ -1,143 +1,75 @@
-import { useEffect, useRef, useState } from "react";
-import { useLoaderData, type MetaFunction } from "react-router";
+import { useEffect, useRef } from "react";
 import { PageShell } from "../../components/PageShell";
+import { useLoaderData } from "react-router";
 
 const ADSENSE_SCRIPT_ID = "taqui-adsense";
-
-declare global {
-	interface Window {
-		adsbygoogle?: unknown[];
-	}
-}
 
 type AdLoaderData = {
 	adsenseClient: string;
 	adsenseSlot: string;
 };
 
-export const adMeta: MetaFunction = () => {
-	return [
-		{ title: "Táqui o Anúncio" },
-		{
-			name: "description",
-			content: "Veja um anúncio do Táqui Generator.",
-		},
-	];
-};
-
-function buildAdSenseScriptSrc(client: string) {
-	const url = new URL("https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js");
-	url.searchParams.set("client", client);
-	return url.toString();
-}
-
-function ensureAdSenseScriptLoaded(scriptSrc: string, parent: HTMLElement) {
-	if (typeof document === "undefined") return;
-
-	const existing = (document.getElementById(ADSENSE_SCRIPT_ID) ??
-		document.querySelector(
-			`script[src^="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"]`,
-		)) as HTMLScriptElement | null;
-
-	if (existing) {
-		if (existing.id === ADSENSE_SCRIPT_ID && existing.parentElement !== parent) {
-			parent.appendChild(existing);
-		}
-		return existing;
-	}
-
-	const script = document.createElement("script");
-	script.id = ADSENSE_SCRIPT_ID;
-	script.async = true;
-	script.src = scriptSrc;
-	script.crossOrigin = "anonymous";
-	parent.appendChild(script);
-	return script;
+declare global {
+  interface Window {
+    adsbygoogle?: unknown[];
+  }
 }
 
 export function AdPage() {
-	const { adsenseClient, adsenseSlot } = useLoaderData() as AdLoaderData;
-	const adSlotRef = useRef<HTMLDivElement | null>(null);
-	const [adError, setAdError] = useState<string | null>(null);
-	const [mounted, setMounted] = useState(false);
+  const insRef = useRef<HTMLModElement | null>(null);
+  const { adsenseClient, adsenseSlot } = useLoaderData() as AdLoaderData;
 
-	useEffect(() => {
-		setMounted(true);
-	}, []);
+  useEffect(() => {
+    let script = document.getElementById(ADSENSE_SCRIPT_ID) as HTMLScriptElement | null;
 
-	useEffect(() => {
-		if (!mounted) return;
-		setAdError(null);
-		if (!adsenseClient || !adsenseSlot) {
-			setAdError(
-				"Configuração ausente. Defina TAQUI_ADSENSE_CLIENT e TAQUI_ADSENSE_SLOT no servidor.",
-			);
-			return;
-		}
+    if (!script) {
+      script = document.createElement("script");
+      script.id = ADSENSE_SCRIPT_ID;
+      script.async = true;
+      script.src = `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${adsenseClient}`;
+      script.crossOrigin = "anonymous";
+      document.head.appendChild(script);
+    }
 
-		const adSlot = adSlotRef.current;
-		if (!adSlot) return;
+    const pushAd = () => {
+      try {
+        (window.adsbygoogle = window.adsbygoogle || []).push({});
+      } catch {
+      }
+    };
 
-		if (adSlot.dataset.taquiAdsenseMounted === "true") return;
-		adSlot.dataset.taquiAdsenseMounted = "true";
+    if (script.getAttribute("data-loaded") === "true") {
+      pushAd();
+      return;
+    }
 
-		const script = ensureAdSenseScriptLoaded(buildAdSenseScriptSrc(adsenseClient), adSlot);
+    const onLoad = () => {
+      script?.setAttribute("data-loaded", "true");
+      pushAd();
+    };
 
-		const handleScriptError = () => {
-			setAdError(
-				"O anúncio não carregou. Seu navegador/adblock pode estar bloqueando o AdSense.",
-			);
-		};
+    script.addEventListener("load", onLoad);
+    return () => script.removeEventListener("load", onLoad);
+  }, []);
 
-		script?.addEventListener("error", handleScriptError);
+  return (
+    <PageShell showLogo containerClassName="max-w-[1200px] gap-12">
+      <div className="flex w-full flex-col items-center gap-10">
+        <div className="w-full max-w-[540px] rounded-lg border-[3px] border-black bg-white p-6 font-mono text-black shadow-[4px_4px_0_#000000]">
+          <h1 className="text-2xl font-bold leading-9">Táqui o anúncio</h1>
+          <p className="mt-2 text-sm leading-6 text-black/80">
+            Se ele não aparecer, pode ser bloqueio do navegador/adblock.
+          </p>
 
-		// Renderiza exatamente o snippet recomendado pelo Google (client-side),
-		// para evitar mismatch de hidratação no SSR.
-		const comment = document.createComment(" taqui ");
-		const ins = document.createElement("ins");
-		ins.className = "adsbygoogle";
-		ins.style.cssText = "display:inline-block;width:540px;height:450px";
-		ins.setAttribute("data-ad-client", adsenseClient);
-		ins.setAttribute("data-ad-slot", adsenseSlot);
-
-		const pushScript = document.createElement("script");
-		pushScript.text = "(adsbygoogle = window.adsbygoogle || []).push({});";
-
-		adSlot.appendChild(comment);
-		adSlot.appendChild(ins);
-		adSlot.appendChild(pushScript);
-
-		return () => {
-			script?.removeEventListener("error", handleScriptError);
-		};
-	}, [adsenseClient, adsenseSlot, mounted]);
-
-	return (
-		<PageShell showLogo containerClassName="max-w-[1200px] gap-12">
-			<div className="flex w-full flex-col items-center gap-10">
-				<div className="w-full max-w-[540px] rounded-lg border-[3px] border-black bg-white p-6 font-mono text-black shadow-[4px_4px_0_#000000]">
-					<h1 className="text-2xl font-bold leading-9">Táqui o anúncio</h1>
-					<p className="mt-2 text-sm leading-6 text-black/80">
-						Se ele não aparecer, pode ser bloqueio do navegador/adblock.
-					</p>
-
-					<div className="mt-6 flex w-full justify-center overflow-x-auto">
-						{mounted ? (
-							<div ref={adSlotRef} />
-						) : (
-							<div className="flex h-[450px] w-[540px] max-w-full items-center justify-center rounded-lg border-2 border-black bg-[#47B8FF] px-6 text-center text-sm leading-6 text-black shadow-[4px_4px_0_#000000]">
-								Carregando anúncio…
-							</div>
-						)}
-					</div>
-
-					{adError && (
-						<p className="mt-4 rounded-lg border-2 border-black bg-[#FF9F29] p-3 text-sm leading-6 shadow-[2px_2px_0_#000000]">
-							{adError}
-						</p>
-					)}
-				</div>
-			</div>
-		</PageShell>
-	);
+          <ins
+            ref={insRef}
+            className="adsbygoogle"
+            style={{ display: "inline-block", width: 480, height: 600 }}
+            data-ad-client={adsenseClient}
+            data-ad-slot={adsenseSlot}
+          />
+        </div>
+      </div>
+    </PageShell>
+  );
 }
