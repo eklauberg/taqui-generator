@@ -4,10 +4,11 @@ import {
 	FlaskIcon,
 	GlobeIcon,
 	LinkSimpleIcon,
+	MegaphoneIcon,
 	PasswordIcon,
 	StickerIcon,
-	WhatsappLogoIcon,
 	TicketIcon,
+	WhatsappLogoIcon,
 } from "@phosphor-icons/react";
 import type { MetaFunction } from "react-router";
 import { PageShell } from "../../components/PageShell";
@@ -17,7 +18,15 @@ type HubCardProps = {
 	description: string;
 	href: string;
 	badge?: string;
-	icon: "sticker" | "globe" | "link" | "Password" | "clock" | "whatsapp" | "ticket";
+	icon:
+		| "sticker"
+		| "globe"
+		| "link"
+		| "Password"
+		| "clock"
+		| "whatsapp"
+		| "ticket"
+		| "ad";
 };
 
 type HubStatProps = {
@@ -74,6 +83,14 @@ const hubCards: HubCardProps[] = [
 		href: "/loto",
 		badge: "Novo",
 		icon: "ticket",
+	},
+	{
+		title: "Táqui o Anúncio",
+		description:
+			"Um espacinho pra manter as luzes acesas. Abre um anúncio do Táqui Generator.",
+		href: "/ad",
+		badge: "Beta",
+		icon: "ad",
 	},
 ];
 
@@ -154,6 +171,8 @@ function HubCardIcon({ kind }: { kind: HubCardProps["icon"] }) {
 			return <WhatsappLogoIcon className={className} />;
 		case "ticket":
 			return <TicketIcon className={className} />;
+		case "ad":
+			return <MegaphoneIcon className={className} />;
 		default:
 			return null;
 	}

@@ -3,6 +3,9 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    environment:
+      - TAQUI_ADSENSE_CLIENT
+      - TAQUI_ADSENSE_SLOT
     ports:
       - "7000:3000"
     restart: always
