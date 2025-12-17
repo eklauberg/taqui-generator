@@ -10,6 +10,7 @@ import {
 	WhatsappLogoIcon,
 	TicketIcon,
 	ArrowsClockwiseIcon,
+	DiceSixIcon,
 } from "@phosphor-icons/react";
 import type { MetaFunction } from "react-router";
 import { PageShell } from "../../components/PageShell";
@@ -28,7 +29,8 @@ type HubCardProps = {
 	| "whatsapp"
 	| "ticket"
 	| "hash"
-	| "roleta";
+	| "roleta"
+	| "dados";
 };
 
 type HubStatProps = {
@@ -101,6 +103,14 @@ const hubCards: HubCardProps[] = [
 		href: "/roleta",
 		badge: "Novo",
 		icon: "roleta",
+	},
+	{
+		title: "Táqui os Dados",
+		description:
+			"Escolha quantos dados e quantos lados vai lançar, visualize as faces e some na hora.",
+		href: "/dados",
+		badge: "Novo",
+		icon: "dados",
 	},
 ];
 
@@ -185,6 +195,8 @@ function HubCardIcon({ kind }: { kind: HubCardProps["icon"] }) {
 			return <HashStraightIcon className={className} />;
 		case "roleta":
 			return <ArrowsClockwiseIcon className={className} />;
+		case "dados":
+			return <DiceSixIcon className={className} />;
 		default:
 			return null;
 	}
