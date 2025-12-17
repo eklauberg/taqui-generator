@@ -5,7 +5,7 @@ import { PageShell } from "../../components/PageShell";
 import { taquiToastPresets, useToast } from "../../components/Toast";
 
 const MIN_QUANTITY = 1;
-const MAX_QUANTITY = 10;
+const MAX_QUANTITY = 15;
 const MIN_NUMBER = 1;
 const MAX_NUMBER = 60;
 const DEFAULT_QUANTITY = 6;
