@@ -9,6 +9,7 @@ import {
 	StickerIcon,
 	WhatsappLogoIcon,
 	TicketIcon,
+	ArrowsClockwiseIcon,
 } from "@phosphor-icons/react";
 import type { MetaFunction } from "react-router";
 import { PageShell } from "../../components/PageShell";
@@ -18,7 +19,16 @@ type HubCardProps = {
 	description: string;
 	href: string;
 	badge?: string;
-	icon: "sticker" | "globe" | "link" | "Password" | "clock" | "whatsapp" | "ticket" | "hash";
+	icon:
+	| "sticker"
+	| "globe"
+	| "link"
+	| "Password"
+	| "clock"
+	| "whatsapp"
+	| "ticket"
+	| "hash"
+	| "roleta";
 };
 
 type HubStatProps = {
@@ -83,6 +93,14 @@ const hubCards: HubCardProps[] = [
 		href: "/hash",
 		badge: "Novo",
 		icon: "hash",
+	},
+	{
+		title: "Táqui Tua Roleta",
+		description:
+			"Gira a roda, edita a lista e deixa o algoritmo decidir por você. Sem julgamentos.",
+		href: "/roleta",
+		badge: "Novo",
+		icon: "roleta",
 	},
 ];
 
@@ -165,6 +183,8 @@ function HubCardIcon({ kind }: { kind: HubCardProps["icon"] }) {
 			return <TicketIcon className={className} />;
 		case "hash":
 			return <HashStraightIcon className={className} />;
+		case "roleta":
+			return <ArrowsClockwiseIcon className={className} />;
 		default:
 			return null;
 	}
