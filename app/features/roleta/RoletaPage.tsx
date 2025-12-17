@@ -4,8 +4,10 @@ import {
 	ArrowClockwiseIcon,
 	NotePencilIcon,
 	PlusIcon,
+	ShuffleIcon,
 	SpeakerHighIcon,
 	SpeakerSlashIcon,
+	BroomIcon,
 	XIcon,
 } from "@phosphor-icons/react";
 import { PageShell } from "../../components/PageShell";
@@ -90,6 +92,15 @@ function getRandomInt(maxExclusive: number) {
 		const value = buffer[0]!;
 		if (value < limit) return value % maxExclusive;
 	}
+}
+
+function shuffleArray<T>(items: T[]) {
+	const array = [...items];
+	for (let index = array.length - 1; index > 0; index -= 1) {
+		const swapIndex = getRandomInt(index + 1);
+		[array[index], array[swapIndex]] = [array[swapIndex]!, array[index]!];
+	}
+	return array;
 }
 
 function getSliceIndex(rotationDeg: number, sliceCount: number) {
@@ -361,13 +372,29 @@ export function RoletaPage() {
 			.filter((line) => line.length > 0);
 
 		const unique = Array.from(new Set(lines));
-		if (unique.length === 0) return DEFAULT_OPTIONS;
+		if (unique.length === 0) return [];
 
 		let counter = 0;
 		return unique.map((label) => {
 			counter += 1;
 			return { id: `opt_${Date.now().toString(36)}_${counter.toString(36)}`, label };
 		});
+	};
+
+	const clearOptions = () => {
+		setOptions([]);
+		setNewOptionText("");
+		setBulkText("");
+		setEditMode(false);
+		setHighlight(null);
+		setWinnerId(null);
+	};
+
+	const shuffleOptions = () => {
+		if (options.length < 2) return;
+		setOptions((prev) => shuffleArray(prev));
+		setHighlight(null);
+		setWinnerId(null);
 	};
 
 	const commitBulkText = () => {
@@ -622,7 +649,7 @@ export function RoletaPage() {
 							className="flex h-[58px] w-full shrink-0 items-center justify-center gap-2 rounded-lg border-[3px] border-black bg-white px-4 text-lg font-bold leading-6 shadow-[2px_2px_0_#000000] sm:w-[170px]"
 						>
 							<span className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-black bg-white">
-								<PlusIcon className="h-4 w-4 text-black" weight="bold" />
+								<PlusIcon className="h-4 w-4 text-black" />
 							</span>
 							Adicionar
 						</button>
@@ -634,35 +661,53 @@ export function RoletaPage() {
 						disabled={phaseKind === "spin"}
 						className="flex h-[64px] w-full items-center justify-center gap-2 rounded-lg border-[3px] border-black bg-[#FFF129] px-[14px] py-3 text-2xl font-bold leading-9 text-black shadow-[2px_2px_0_#000000] disabled:cursor-not-allowed disabled:opacity-60"
 					>
-						<ArrowClockwiseIcon className="h-7 w-7" weight="bold" />
+						<ArrowClockwiseIcon className="h-7 w-7" />
 						{phaseKind === "spin" ? "Girando..." : "Girar"}
 					</button>
 
 					<div className="w-full overflow-hidden rounded-lg border-[3px] border-black bg-white shadow-[4px_4px_0_#000000]">
 						<div className="flex items-center justify-between border-b-2 border-black px-4 py-3">
-							<p className="text-sm font-bold leading-5 text-black/70">Opções</p>
-
+							<p className="text-sm font-bold leading-5 text-black/70 text-xl">Opções</p>
 							<div className="flex items-center gap-2">
 								<button
 									type="button"
+									onClick={clearOptions}
+									disabled={phaseKind === "spin" || options.length === 0}
+									className="flex h-10 w-10 items-center justify-center rounded-lg border-2 border-black bg-white shadow-[2px_2px_0_#000000] disabled:opacity-50"
+									aria-label="Limpar lista"
+								>
+									<BroomIcon className="h-5 w-5 text-black" />
+								</button>
+								<button
+									type="button"
 									onClick={() => setEditMode((prev) => !prev)}
+									disabled={phaseKind === "spin"}
 									className="flex h-10 w-10 items-center justify-center rounded-lg border-2 border-black bg-white shadow-[2px_2px_0_#000000]"
 									aria-label={editMode ? "Voltar" : "Editar tudo"}
 								>
-									<NotePencilIcon className="h-5 w-5 text-black" weight="bold" />
+									<NotePencilIcon className="h-5 w-5 text-black" />
 								</button>
-
+								<button
+									type="button"
+									onClick={shuffleOptions}
+									disabled={phaseKind === "spin" || editMode || options.length < 2}
+									className="flex h-10 w-10 items-center justify-center rounded-lg border-2 border-black bg-white shadow-[2px_2px_0_#000000] disabled:opacity-50"
+									aria-label="Embaralhar opções"
+								>
+									<ShuffleIcon className="h-5 w-5 text-black" />
+								</button>
 								<button
 									type="button"
 									onClick={() => setSoundEnabled((prev) => !prev)}
+									disabled={phaseKind === "spin"}
 									aria-pressed={soundEnabled}
-									className="flex h-10 w-10 items-center justify-center rounded-lg border-2 border-black bg-white shadow-[2px_2px_0_#000000]"
+									className="flex h-10 w-10 items-center justify-center rounded-lg border-2 border-black bg-white shadow-[2px_2px_0_#000000] disabled:opacity-50"
 									aria-label={`Som: ${soundEnabled ? "ON" : "OFF"}`}
 								>
 									{soundEnabled ? (
-										<SpeakerHighIcon className="h-5 w-5 text-black" weight="bold" />
+										<SpeakerHighIcon className="h-5 w-5 text-black" />
 									) : (
-										<SpeakerSlashIcon className="h-5 w-5 text-black" weight="bold" />
+										<SpeakerSlashIcon className="h-5 w-5 text-black" />
 									)}
 								</button>
 							</div>
