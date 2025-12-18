@@ -10,6 +10,7 @@ import {
 	WhatsappLogoIcon,
 	TicketIcon,
 	ArrowsClockwiseIcon,
+	TextAaIcon,
 } from "@phosphor-icons/react";
 import type { MetaFunction } from "react-router";
 import { PageShell } from "../../components/PageShell";
@@ -28,7 +29,8 @@ type HubCardProps = {
 	| "whatsapp"
 	| "ticket"
 	| "hash"
-	| "roleta";
+	| "roleta"
+	| "textao";
 };
 
 type HubStatProps = {
@@ -101,6 +103,14 @@ const hubCards: HubCardProps[] = [
 		href: "/roleta",
 		badge: "Novo",
 		icon: "roleta",
+	},
+	{
+		title: "Táqui Teu Textão",
+		description:
+			"Descubra se você escreveu um tweet ou a Bíblia 2. A gente conta cada letra, palavra e linha desse teu drama antes de você passar vergonha.",
+		href: "/textao",
+		badge: "Novo",
+		icon: "textao",
 	},
 ];
 
@@ -185,6 +195,8 @@ function HubCardIcon({ kind }: { kind: HubCardProps["icon"] }) {
 			return <HashStraightIcon className={className} />;
 		case "roleta":
 			return <ArrowsClockwiseIcon className={className} />;
+		case "textao":
+			return <TextAaIcon className={className} />;
 		default:
 			return null;
 	}
