@@ -41,7 +41,7 @@ const SPIN_ACCEL_PORTION = 0.32;
 const STROBE_INTERVAL_MS = 60;
 const POINTER_ANGLE_DEGREES = 90;
 const MIN_MULTIPLIER = 1;
-const MAX_MULTIPLIER = 4;
+const MAX_MULTIPLIER = 9;
 
 const DEFAULT_OPTIONS: WheelOption[] = [
 	{ id: "opt_pizza", label: "Pizza", multiplier: 1 },
@@ -291,22 +291,73 @@ export function RoletaPage() {
 	const wheelSlices = useMemo(() => {
 		if (options.length === 0) return [];
 
-		const slices: Array<{ optionId: string; label: string; key: string }> = [];
-		options.forEach((option) => {
-			const multiplier = clampNumber(
-				Math.trunc(option.multiplier ?? MIN_MULTIPLIER),
-				MIN_MULTIPLIER,
-				MAX_MULTIPLIER,
-			);
+		const pool = options
+			.map((option, order) => {
+				const multiplier = clampNumber(
+					Math.trunc(option.multiplier ?? MIN_MULTIPLIER),
+					MIN_MULTIPLIER,
+					MAX_MULTIPLIER,
+				);
 
-			for (let repeatIndex = 0; repeatIndex < multiplier; repeatIndex += 1) {
-				slices.push({
+				return {
 					optionId: option.id,
 					label: option.label,
-					key: `${option.id}_${repeatIndex}`,
-				});
+					remaining: multiplier,
+					order,
+				};
+			})
+			.filter((entry) => entry.remaining > 0);
+
+		const totalSlices = pool.reduce((sum, entry) => sum + entry.remaining, 0);
+		const copyIndexByOptionId = new Map<string, number>();
+
+		const pickNextIndex = (lastOptionId: string | null) => {
+			let bestIndex = -1;
+			let bestRemaining = -1;
+			let bestOrder = Number.POSITIVE_INFINITY;
+
+			for (let index = 0; index < pool.length; index += 1) {
+				const entry = pool[index]!;
+				if (entry.remaining <= 0) continue;
+				if (lastOptionId && entry.optionId === lastOptionId) continue;
+
+				if (
+					entry.remaining > bestRemaining ||
+					(entry.remaining === bestRemaining && entry.order < bestOrder)
+				) {
+					bestRemaining = entry.remaining;
+					bestOrder = entry.order;
+					bestIndex = index;
+				}
 			}
-		});
+
+			return bestIndex;
+		};
+
+		const slices: Array<{ optionId: string; label: string; key: string }> = [];
+		let lastOptionId: string | null = null;
+
+		for (let index = 0; index < totalSlices; index += 1) {
+			let chosenIndex = pickNextIndex(lastOptionId);
+			if (chosenIndex === -1) {
+				chosenIndex = pickNextIndex(null);
+			}
+
+			if (chosenIndex === -1) break;
+
+			const entry = pool[chosenIndex]!;
+			const copyIndex = copyIndexByOptionId.get(entry.optionId) ?? 0;
+			copyIndexByOptionId.set(entry.optionId, copyIndex + 1);
+
+			slices.push({
+				optionId: entry.optionId,
+				label: entry.label,
+				key: `${entry.optionId}_${copyIndex}`,
+			});
+
+			entry.remaining -= 1;
+			lastOptionId = entry.optionId;
+		}
 
 		return slices;
 	}, [options]);
