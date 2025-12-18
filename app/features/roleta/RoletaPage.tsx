@@ -2,10 +2,13 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { MetaFunction } from "react-router";
 import {
 	ArrowClockwiseIcon,
+	ArrowCounterClockwiseIcon,
 	NotePencilIcon,
 	PlusIcon,
+	ShuffleIcon,
 	SpeakerHighIcon,
 	SpeakerSlashIcon,
+	BroomIcon,
 	XIcon,
 } from "@phosphor-icons/react";
 import { PageShell } from "../../components/PageShell";
@@ -14,6 +17,7 @@ import { taquiToastPresets, useToast } from "../../components/Toast";
 type WheelOption = {
 	id: string;
 	label: string;
+	multiplier: number;
 };
 
 type WheelPhase =
@@ -36,16 +40,18 @@ const SPIN_TOTAL_MS = 6500;
 const SPIN_ACCEL_PORTION = 0.32;
 const STROBE_INTERVAL_MS = 60;
 const POINTER_ANGLE_DEGREES = 90;
+const MIN_MULTIPLIER = 1;
+const MAX_MULTIPLIER = 9;
 
 const DEFAULT_OPTIONS: WheelOption[] = [
-	{ id: "opt_pizza", label: "Pizza" },
-	{ id: "opt_sushi", label: "Sushi" },
-	{ id: "opt_pastel", label: "Pastel" },
-	{ id: "opt_acai", label: "Açaí" },
-	{ id: "opt_lasanha", label: "Lasanha" },
-	{ id: "opt_churras", label: "Churrasco" },
-	{ id: "opt_burger", label: "Burger" },
-	{ id: "opt_taco", label: "Taco" },
+	{ id: "opt_pizza", label: "Pizza", multiplier: 1 },
+	{ id: "opt_sushi", label: "Sushi", multiplier: 1 },
+	{ id: "opt_pastel", label: "Pastel", multiplier: 1 },
+	{ id: "opt_acai", label: "Açaí", multiplier: 1 },
+	{ id: "opt_lasanha", label: "Lasanha", multiplier: 1 },
+	{ id: "opt_churras", label: "Churrasco", multiplier: 1 },
+	{ id: "opt_burger", label: "Burger", multiplier: 1 },
+	{ id: "opt_taco", label: "Taco", multiplier: 1 },
 ];
 
 export const roletaMeta: MetaFunction = () => {
@@ -62,6 +68,10 @@ export const roletaMeta: MetaFunction = () => {
 function normalizeAngle(degrees: number) {
 	const mod = degrees % 360;
 	return mod < 0 ? mod + 360 : mod;
+}
+
+function clampNumber(value: number, min: number, max: number) {
+	return Math.min(max, Math.max(min, value));
 }
 
 function easeInCubic(t: number) {
@@ -90,6 +100,15 @@ function getRandomInt(maxExclusive: number) {
 		const value = buffer[0]!;
 		if (value < limit) return value % maxExclusive;
 	}
+}
+
+function shuffleArray<T>(items: T[]) {
+	const array = [...items];
+	for (let index = array.length - 1; index > 0; index -= 1) {
+		const swapIndex = getRandomInt(index + 1);
+		[array[index], array[swapIndex]] = [array[swapIndex]!, array[index]!];
+	}
+	return array;
 }
 
 function getSliceIndex(rotationDeg: number, sliceCount: number) {
@@ -269,10 +288,85 @@ export function RoletaPage() {
 
 	const listItemRefs = useRef<Map<string, HTMLDivElement | null>>(new Map());
 
+	const wheelSlices = useMemo(() => {
+		if (options.length === 0) return [];
+
+		const pool = options
+			.map((option, order) => {
+				const multiplier = clampNumber(
+					Math.trunc(option.multiplier ?? MIN_MULTIPLIER),
+					MIN_MULTIPLIER,
+					MAX_MULTIPLIER,
+				);
+
+				return {
+					optionId: option.id,
+					label: option.label,
+					remaining: multiplier,
+					order,
+				};
+			})
+			.filter((entry) => entry.remaining > 0);
+
+		const totalSlices = pool.reduce((sum, entry) => sum + entry.remaining, 0);
+		const copyIndexByOptionId = new Map<string, number>();
+
+		const pickNextIndex = (lastOptionId: string | null) => {
+			let bestIndex = -1;
+			let bestRemaining = -1;
+			let bestOrder = Number.POSITIVE_INFINITY;
+
+			for (let index = 0; index < pool.length; index += 1) {
+				const entry = pool[index]!;
+				if (entry.remaining <= 0) continue;
+				if (lastOptionId && entry.optionId === lastOptionId) continue;
+
+				if (
+					entry.remaining > bestRemaining ||
+					(entry.remaining === bestRemaining && entry.order < bestOrder)
+				) {
+					bestRemaining = entry.remaining;
+					bestOrder = entry.order;
+					bestIndex = index;
+				}
+			}
+
+			return bestIndex;
+		};
+
+		const slices: Array<{ optionId: string; label: string; key: string }> = [];
+		let lastOptionId: string | null = null;
+
+		for (let index = 0; index < totalSlices; index += 1) {
+			let chosenIndex = pickNextIndex(lastOptionId);
+			if (chosenIndex === -1) {
+				chosenIndex = pickNextIndex(null);
+			}
+
+			if (chosenIndex === -1) break;
+
+			const entry = pool[chosenIndex]!;
+			const copyIndex = copyIndexByOptionId.get(entry.optionId) ?? 0;
+			copyIndexByOptionId.set(entry.optionId, copyIndex + 1);
+
+			slices.push({
+				optionId: entry.optionId,
+				label: entry.label,
+				key: `${entry.optionId}_${copyIndex}`,
+			});
+
+			entry.remaining -= 1;
+			lastOptionId = entry.optionId;
+		}
+
+		return slices;
+	}, [options]);
+
+	const sliceCount = Math.max(wheelSlices.length, 1);
+
 	const svgSlices = useMemo(() => {
-		const sliceCount = Math.max(options.length, 1);
 		return generateWheelSvgPaths(sliceCount, 180);
-	}, [options.length]);
+	}, [sliceCount]);
 
 	const setHighlight = (id: string | null, options?: { scroll?: boolean }) => {
 		if (highlightIdRef.current === id) return;
@@ -331,8 +425,8 @@ export function RoletaPage() {
 			}
 		}
 
-		const winnerIndex = getRandomInt(options.length);
-		const finalNormalized = buildFinalRotationNormalized(winnerIndex, options.length);
+		const winnerIndex = getRandomInt(wheelSlices.length);
+		const finalNormalized = buildFinalRotationNormalized(winnerIndex, sliceCount);
 		const startAngle = wheelAngleRef.current;
 		const startNormalized = normalizeAngle(startAngle);
 		const deltaToFinal = normalizeAngle(finalNormalized - startNormalized);
@@ -360,14 +454,88 @@ export function RoletaPage() {
 			.map((line) => line.trim())
 			.filter((line) => line.length > 0);
 
-		const unique = Array.from(new Set(lines));
-		if (unique.length === 0) return DEFAULT_OPTIONS;
+		if (lines.length === 0) return [];
+
+		const parseLine = (line: string) => {
+			const prefix = /^(\d+)\s*[xX]\s*(.+)$/.exec(line);
+			if (prefix) {
+				return {
+					label: prefix[2]!.trim(),
+					multiplier: Number(prefix[1]!),
+				};
+			}
+
+			const suffixX = /^(.+?)\s+[xX]\s*(\d+)$/.exec(line);
+			if (suffixX) {
+				return {
+					label: suffixX[1]!.trim(),
+					multiplier: Number(suffixX[2]!),
+				};
+			}
+
+			const suffix = /^(.+?)\s+(\d+)\s*[xX]$/.exec(line);
+			if (suffix) {
+				return {
+					label: suffix[1]!.trim(),
+					multiplier: Number(suffix[2]!),
+				};
+			}
+
+			return { label: line, multiplier: MIN_MULTIPLIER };
+		};
+
+		const merged = new Map<string, { label: string; multiplier: number }>();
+		lines.forEach((rawLine) => {
+			const { label, multiplier } = parseLine(rawLine);
+			const trimmed = label.trim();
+			if (trimmed.length === 0) return;
+
+			const parsedMultiplier = clampNumber(
+				Number.isFinite(multiplier) ? Math.trunc(multiplier) : MIN_MULTIPLIER,
+				MIN_MULTIPLIER,
+				MAX_MULTIPLIER,
+			);
+
+			const key = trimmed.toLowerCase();
+			const current = merged.get(key);
+			const nextMultiplier = clampNumber(
+				(current?.multiplier ?? 0) + parsedMultiplier,
+				MIN_MULTIPLIER,
+				MAX_MULTIPLIER,
+			);
+			merged.set(key, {
+				label: current?.label ?? trimmed,
+				multiplier: nextMultiplier,
+			});
+		});
+
+		if (merged.size === 0) return [];
 
 		let counter = 0;
-		return unique.map((label) => {
+		return Array.from(merged.values()).map((entry) => {
 			counter += 1;
-			return { id: `opt_${Date.now().toString(36)}_${counter.toString(36)}`, label };
+			return {
+				id: `opt_${Date.now().toString(36)}_${counter.toString(36)}`,
+				label: entry.label,
+				multiplier: entry.multiplier,
+			};
 		});
+	};
+
+	const clearOptions = () => {
+		setOptions([]);
+		setNewOptionText("");
+		setBulkText("");
+		setEditMode(false);
+		setHighlight(null);
+		setWinnerId(null);
+	};
+
+	const shuffleOptions = () => {
+		if (options.length < 2) return;
+		setOptions((prev) => shuffleArray(prev));
+		setHighlight(null);
+		setWinnerId(null);
 	};
 
 	const commitBulkText = () => {
@@ -376,6 +544,29 @@ export function RoletaPage() {
 		setEditMode(false);
 		setHighlight(null);
 		setWinnerId(null);
+	};
+
+	const cycleMultiplier = (id: string) => {
+		setOptions((prev) =>
+			prev.map((option) => {
+				if (option.id !== id) return option;
+				const current = clampNumber(
+					Math.trunc(option.multiplier ?? MIN_MULTIPLIER),
+					MIN_MULTIPLIER,
+					MAX_MULTIPLIER,
+				);
+				const next = current >= MAX_MULTIPLIER ? MIN_MULTIPLIER : current + 1;
+				return { ...option, multiplier: next };
+			}),
+		);
+	};
+
+	const resetMultiplier = (id: string) => {
+		setOptions((prev) =>
+			prev.map((option) =>
+				option.id === id ? { ...option, multiplier: MIN_MULTIPLIER } : option,
+			),
+		);
 	};
 
 	const removeOption = (id: string) => {
@@ -395,7 +586,7 @@ export function RoletaPage() {
 				return prev;
 			}
 			const nextId = `opt_${Date.now().toString(36)}_${getRandomInt(1_000_000).toString(36)}`;
-			return [...prev, { id: nextId, label: trimmed }];
+			return [...prev, { id: nextId, label: trimmed, multiplier: MIN_MULTIPLIER }];
 		});
 		setNewOptionText("");
 	};
@@ -455,20 +646,20 @@ export function RoletaPage() {
 				const nextAngle = phase.startAngle + phase.totalDelta * progress;
 				wheelAngleRef.current = nextAngle;
 
-				const sliceIndex = getSliceIndex(nextAngle, options.length);
+				const sliceIndex = getSliceIndex(nextAngle, sliceCount);
 				if (lastSliceIndexRef.current !== sliceIndex) {
 					lastSliceIndexRef.current = sliceIndex;
 					playTick();
 				}
 
 				if (clampedElapsed > accelMs) {
-					const id = options[sliceIndex]?.id ?? null;
+					const id = wheelSlices[sliceIndex]?.optionId ?? null;
 					setHighlight(id, { scroll: true });
 				}
 
 				if (elapsed >= totalMs) {
-					const winner = options[phase.winnerIndex];
-					const winnerOptionId = winner?.id ?? null;
+					const winner = wheelSlices[phase.winnerIndex];
+					const winnerOptionId = winner?.optionId ?? null;
 					setWinnerId(winnerOptionId);
 					setHighlight(winnerOptionId, { scroll: true });
 					setPhaseKind("stopped");
@@ -481,9 +672,7 @@ export function RoletaPage() {
 					toast({
 						...taquiToastPresets.success,
 						title: "A CULPA É DO ALGORITMO",
-						message: winner?.label
-							? `Deu: ${winner.label}`
-							: "O algoritmo decidiu.",
+						message: winner?.label ? `Deu: ${winner.label}` : "O algoritmo decidiu.",
 					});
 				}
 			}
@@ -503,16 +692,24 @@ export function RoletaPage() {
 			rafRef.current = null;
 			lastFrameTimeRef.current = null;
 		};
-	}, [options, toast]);
+	}, [options, sliceCount, toast, wheelSlices]);
 
 	useEffect(() => {
 		if (!editMode) return;
-		setBulkText(options.map((option) => option.label).join("\n"));
+		setBulkText(
+			options
+				.map((option) =>
+					option.multiplier > MIN_MULTIPLIER
+						? `${option.multiplier}x ${option.label}`
+						: option.label,
+				)
+				.join("\n"),
+		);
 	}, [editMode, options]);
 
 	return (
 		<PageShell showLogo containerClassName="max-w-[1200px] gap-12">
-			<div className="flex w-full flex-col items-center gap-10 lg:flex-row lg:items-center lg:justify-center lg:gap-16">
+			<div className="flex w-full flex-col items-center gap-10 lg:flex-row lg:items-start lg:justify-center lg:gap-16">
 				<div className="relative flex shrink-0 items-center justify-center">
 					<div className="relative h-[360px] w-[360px] sm:h-[520px] sm:w-[520px]">
 						<div className="absolute inset-0 rounded-full border-[2px] border-black bg-white shadow-[4px_4px_0_#000000]" />
@@ -539,43 +736,52 @@ export function RoletaPage() {
 									))}
 								</svg>
 
-								{options.map((option, index) => {
-									const sliceAngle = 360 / Math.max(options.length, 1);
+								{wheelSlices.map((slice, index) => {
+									const sliceAngle = 360 / sliceCount;
 									const rotation = (index + 0.5) * sliceAngle;
 									return (
 										<div
-											key={option.id}
+											key={slice.key}
 											className="absolute left-1/2 top-1/2 w-[150px] text-center font-mono text-sm font-bold leading-8 text-black sm:w-[170px] sm:text-2xl"
 											style={{
 												transform: `translate(-50%, -50%) rotate(${rotation}deg) translateY(var(--taqui-label-distance)) rotate(-90deg)`,
 											}}
 										>
 											<span className="block select-none truncate px-1">
-												{option.label}
+												{slice.label}
 											</span>
 										</div>
 									);
 								})}
 
-								<div className="absolute left-1/2 top-1/2 flex h-[72px] w-[72px] -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-[1px] border-black bg-white shadow-[2px_2px_0_#000000]">
+								<button
+									type="button"
+									onClick={() => void spin()}
+									disabled={phaseKind === "spin"}
+									className="absolute left-1/2 top-1/2 flex h-[72px] w-[72px] -translate-x-1/2 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border-[1px] border-black bg-white shadow-[3px_2px_0_#000000] disabled:cursor-not-allowed"
+									aria-label="Girar roleta"
+								>
 									<ArrowClockwiseIcon className="h-8 w-8 text-black" weight="bold" />
-								</div>
+								</button>
 							</div>
 						</div>
 
-						<div className="absolute inset-0 hidden sm:block" aria-hidden="true">
+						<div
+							className="pointer-events-none absolute inset-0 hidden sm:block"
+							aria-hidden="true"
+						>
 							<div
 								ref={dotsRef}
 								className="absolute inset-0 will-change-transform"
 								style={{ transform: `rotate(${wheelAngleRef.current}deg)` }}
 							>
-								{Array.from({ length: Math.max(options.length, 1) }, (_, index) => {
-									const sliceAngle = 360 / Math.max(options.length, 1);
+								{Array.from({ length: sliceCount }, (_, index) => {
+									const sliceAngle = 360 / sliceCount;
 									const angle = index * sliceAngle;
 									return (
 										<div
 											key={`dot_${angle}`}
-											className="absolute left-1/2 top-1/2 h-3 w-3 rounded-full border-1 border-black bg-white shadow-[3px_2px_0_#000000]"
+											className="absolute left-1/2 top-1/2 h-3 w-3 rounded-full border-1 border-black bg-white shadow-[2px_1px_0_#000000]"
 											style={{
 												transform: `translate(-50%, -50%) rotate(${angle}deg) translateY(-244px)`,
 											}}
@@ -607,22 +813,24 @@ export function RoletaPage() {
 					<div className="flex w-full flex-col gap-4 sm:flex-row">
 						<input
 							type="text"
+							disabled={phaseKind === "spin"}
 							value={newOptionText}
 							onChange={(event) => setNewOptionText(event.target.value)}
 							onKeyDown={(event) => {
-								if (event.key === "Enter") addOption();
+								if (event.key === "Enter" && phaseKind !== "spin") addOption();
 							}}
 							placeholder="Adicionar nova opção..."
-							className="h-[58px] w-full flex-1 rounded-lg border-[2px] border-black bg-white px-4 text-lg font-bold leading-6 shadow-[2px_2px_0_#000000] placeholder:text-black/40 focus:outline-none"
+							className="h-[58px] w-full flex-1 rounded-lg border-[2px] border-black bg-white px-4 text-lg font-bold leading-6 shadow-[2px_2px_0_#000000] placeholder:text-black/40 focus:outline-none disabled:cursor-not-allowed disabled:opacity-60"
 						/>
 
 						<button
 							type="button"
 							onClick={addOption}
-							className="flex h-[58px] w-full shrink-0 items-center justify-center gap-2 rounded-lg border-[3px] border-black bg-white px-4 text-lg font-bold leading-6 shadow-[2px_2px_0_#000000] sm:w-[170px]"
+							disabled={phaseKind === "spin"}
+							className="flex h-[58px] w-full shrink-0 cursor-pointer items-center justify-center gap-2 rounded-lg border-[2px] border-black bg-white px-4 text-lg font-bold leading-6 shadow-[2px_2px_0_#000000] disabled:cursor-not-allowed disabled:opacity-60 sm:w-[170px]"
 						>
 							<span className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-black bg-white">
-								<PlusIcon className="h-4 w-4 text-black" weight="bold" />
+								<PlusIcon className="h-4 w-4 text-black" />
 							</span>
 							Adicionar
 						</button>
@@ -632,37 +840,55 @@ export function RoletaPage() {
 						type="button"
 						onClick={() => void spin()}
 						disabled={phaseKind === "spin"}
-						className="flex h-[64px] w-full items-center justify-center gap-2 rounded-lg border-[3px] border-black bg-[#FFF129] px-[14px] py-3 text-2xl font-bold leading-9 text-black shadow-[2px_2px_0_#000000] disabled:cursor-not-allowed disabled:opacity-60"
+						className="flex h-[64px] w-full cursor-pointer items-center justify-center gap-2 rounded-lg border-[2px] border-black bg-[#FFF129] px-[14px] py-3 text-2xl font-bold leading-9 text-black shadow-[2px_2px_0_#000000] disabled:cursor-not-allowed disabled:opacity-60"
 					>
-						<ArrowClockwiseIcon className="h-7 w-7" weight="bold" />
+						<ArrowClockwiseIcon className="h-7 w-7" />
 						{phaseKind === "spin" ? "Girando..." : "Girar"}
 					</button>
 
-					<div className="w-full overflow-hidden rounded-lg border-[3px] border-black bg-white shadow-[4px_4px_0_#000000]">
+					<div className="w-full overflow-hidden rounded-lg border-[2px] border-black bg-white shadow-[4px_4px_0_#000000]">
 						<div className="flex items-center justify-between border-b-2 border-black px-4 py-3">
-							<p className="text-sm font-bold leading-5 text-black/70">Opções</p>
-
+							<p className="text-sm font-bold leading-5 text-black/70 text-xl">Opções</p>
 							<div className="flex items-center gap-2">
 								<button
 									type="button"
+									onClick={clearOptions}
+									disabled={phaseKind === "spin" || options.length === 0}
+									className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg border-2 border-black bg-white shadow-[2px_2px_0_#000000] disabled:cursor-not-allowed disabled:opacity-50"
+									aria-label="Limpar lista"
+								>
+									<BroomIcon className="h-5 w-5 text-black" />
+								</button>
+								<button
+									type="button"
 									onClick={() => setEditMode((prev) => !prev)}
-									className="flex h-10 w-10 items-center justify-center rounded-lg border-2 border-black bg-white shadow-[2px_2px_0_#000000]"
+									disabled={phaseKind === "spin"}
+									className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg border-2 border-black bg-white shadow-[2px_2px_0_#000000] disabled:cursor-not-allowed disabled:opacity-50"
 									aria-label={editMode ? "Voltar" : "Editar tudo"}
 								>
-									<NotePencilIcon className="h-5 w-5 text-black" weight="bold" />
+									<NotePencilIcon className="h-5 w-5 text-black" />
 								</button>
-
+								<button
+									type="button"
+									onClick={shuffleOptions}
+									disabled={phaseKind === "spin" || editMode || options.length < 2}
+									className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg border-2 border-black bg-white shadow-[2px_2px_0_#000000] disabled:cursor-not-allowed disabled:opacity-50"
+									aria-label="Embaralhar opções"
+								>
+									<ShuffleIcon className="h-5 w-5 text-black" />
+								</button>
 								<button
 									type="button"
 									onClick={() => setSoundEnabled((prev) => !prev)}
+									disabled={phaseKind === "spin"}
 									aria-pressed={soundEnabled}
-									className="flex h-10 w-10 items-center justify-center rounded-lg border-2 border-black bg-white shadow-[2px_2px_0_#000000]"
+									className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg border-2 border-black bg-white shadow-[2px_2px_0_#000000] disabled:cursor-not-allowed disabled:opacity-50"
 									aria-label={`Som: ${soundEnabled ? "ON" : "OFF"}`}
 								>
 									{soundEnabled ? (
-										<SpeakerHighIcon className="h-5 w-5 text-black" weight="bold" />
+										<SpeakerHighIcon className="h-5 w-5 text-black" />
 									) : (
-										<SpeakerSlashIcon className="h-5 w-5 text-black" weight="bold" />
+										<SpeakerSlashIcon className="h-5 w-5 text-black" />
 									)}
 								</button>
 							</div>
@@ -673,12 +899,12 @@ export function RoletaPage() {
 								value={bulkText}
 								onChange={(event) => setBulkText(event.target.value)}
 								onBlur={commitBulkText}
-								placeholder="Separe as opções por linha..."
+								placeholder="Separe as opções por linha... (ex: 2x Pizza)"
 								rows={12}
 								className="w-full resize-none bg-white p-4 text-base leading-6 text-black focus:outline-none"
 							/>
 						) : (
-							<div className="max-h-[332px] w-full overflow-y-auto">
+							<div className="taqui-scrollbar-hidden max-h-[332px] w-full overflow-y-auto">
 								{options.map((option) => {
 									const isHighlighted = highlightId === option.id;
 									const isWinner = winnerId === option.id;
@@ -691,18 +917,46 @@ export function RoletaPage() {
 											className={`flex items-center justify-between gap-4 border-b-2 border-black px-4 py-3 ${isHighlighted ? "bg-[#FFF129]" : "bg-white"
 												} ${isWinner ? "animate-pulse" : ""}`}
 										>
-											<p className="min-w-0 flex-1 truncate text-base font-bold leading-6 text-xl">
+											<p className="min-w-0 flex-1 truncate text-left text-base font-bold leading-6 text-xl">
 												{option.label}
 											</p>
 
-											<button
-												type="button"
-												onClick={() => removeOption(option.id)}
-												className="flex h-9 w-9 items-center justify-center text-black"
-												aria-label={`Remover ${option.label}`}
-											>
-												<XIcon className="h-5 w-5" weight="bold" />
-											</button>
+											<div className="flex items-center gap-2">
+												<button
+													type="button"
+													onClick={() => cycleMultiplier(option.id)}
+													disabled={phaseKind === "spin"}
+													className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg border-2 border-black bg-white px-2 text-sm font-bold leading-5 shadow-[2px_2px_0_#000000] disabled:cursor-not-allowed disabled:opacity-50"
+													aria-label={`Multiplicador: ${option.multiplier}x`}
+												>
+													{option.multiplier}x
+												</button>
+
+												{option.multiplier > MIN_MULTIPLIER ? (
+													<button
+														type="button"
+														onClick={() => resetMultiplier(option.id)}
+														disabled={phaseKind === "spin"}
+														className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg border-2 border-black bg-white shadow-[2px_2px_0_#000000] disabled:cursor-not-allowed disabled:opacity-50"
+														aria-label={`Resetar multiplicador de ${option.label}`}
+													>
+														<ArrowCounterClockwiseIcon
+															className="h-5 w-5 text-black"
+															weight="bold"
+														/>
+													</button>
+												) : (
+													<button
+														type="button"
+														onClick={() => removeOption(option.id)}
+														disabled={phaseKind === "spin"}
+														className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg border-2 border-black bg-white shadow-[2px_2px_0_#000000] disabled:cursor-not-allowed disabled:opacity-50"
+														aria-label={`Remover ${option.label}`}
+													>
+														<XIcon className="h-5 w-5 text-black" weight="bold" />
+													</button>
+												)}
+											</div>
 										</div>
 									);
 								})}
